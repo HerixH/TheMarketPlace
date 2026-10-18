@@ -30,7 +30,7 @@ export function lencoBalance(db: DB, seller: string): LencoBalance {
           createdAt: item.createdAt,
           reply: item.reply ?? null,
           repliedAt: item.repliedAt ?? null,
-          status: item.status === "closed" ? "closed" : "open",
+          status: item.status === "closed" ? ("closed" as const) : ("open" as const),
           closedAt: item.closedAt ?? null,
         })),
     }));

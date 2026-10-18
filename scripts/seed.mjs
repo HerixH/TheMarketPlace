@@ -5,6 +5,10 @@ import { promises as fs } from "fs";
 import path from "path";
 
 const DB_PATH = path.join(process.cwd(), "data", "db.json");
+const UPLOAD_DIR = path.join(process.cwd(), "data", "uploads");
+const SEED_IMAGES = path.join(process.cwd(), "scripts", "seed-images");
+// Set ADMIN_PASSWORD on any public deployment; the demo password is published in the README.
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "marketplace";
 // The all-zero public key: a valid address that nobody controls.
 const DEMO_SELLER = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
 const DEMO_EMAIL = "demo@themarketplace.test";
@@ -72,12 +76,13 @@ function hashPassword(password) {
 
 function upsertAccount({ id, email, name, admin }) {
   const createdAt = new Date().toISOString();
+  const password = admin ? ADMIN_PASSWORD : DEMO_PASSWORD;
   const existing = db.accounts.find((a) => a.id === id || a.email === email);
   if (existing) {
     existing.id = id;
     existing.email = email;
     existing.name = name;
-    existing.passwordHash = hashPassword(DEMO_PASSWORD);
+    existing.passwordHash = hashPassword(password);
     existing.admin = admin;
     existing.walletAddress ??= null;
     existing.createdAt ??= createdAt;
@@ -87,7 +92,7 @@ function upsertAccount({ id, email, name, admin }) {
     id,
     email,
     name,
-    passwordHash: hashPassword(DEMO_PASSWORD),
+    passwordHash: hashPassword(password),
     walletAddress: null,
     admin,
     createdAt,
@@ -144,8 +149,13 @@ if (!db.orders.some((o) => o.id === "demodispute01")) {
   });
 }
 
+await fs.mkdir(UPLOAD_DIR, { recursive: true });
+for (const file of await fs.readdir(SEED_IMAGES).catch(() => [])) {
+  await fs.copyFile(path.join(SEED_IMAGES, file), path.join(UPLOAD_DIR, file)).catch(() => undefined);
+}
+
 await fs.mkdir(path.dirname(DB_PATH), { recursive: true });
 await fs.writeFile(DB_PATH, JSON.stringify(db, null, 2));
 console.log(`Seeded ${items.length} demo products.`);
 console.log(`Demo account: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
-console.log(`Admin account: ${ADMIN_EMAIL} / ${DEMO_PASSWORD}`);
+console.log(`Admin account: ${ADMIN_EMAIL} / ${process.env.ADMIN_PASSWORD ? "(ADMIN_PASSWORD)" : DEMO_PASSWORD}`);
