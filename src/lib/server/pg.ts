@@ -31,7 +31,13 @@ export const usePostgres = Boolean(process.env.DATABASE_URL);
 const globalPg = globalThis as unknown as { __mpPool?: Pool; __mpSchema?: Promise<void> };
 
 function pool(): Pool {
-  globalPg.__mpPool ??= new Pool({ connectionString: process.env.DATABASE_URL, max: 5 });
+  globalPg.__mpPool ??= new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 5,
+    // Opening a TLS connection to Neon costs several round trips, so keep them warm.
+    idleTimeoutMillis: 5 * 60 * 1000,
+    keepAlive: true,
+  });
   return globalPg.__mpPool;
 }
 
@@ -59,11 +65,11 @@ export async function withPgCollections<T>(
   await ready();
   const client: PoolClient = await pool().connect();
   try {
-    await client.query("BEGIN");
-    await client.query("SELECT pg_advisory_xact_lock($1)", [LOCK_KEY]);
-    const { rows } = await client.query<{ collection: string; id: string; data: { id: string } }>(
-      "SELECT collection, id, data FROM records ORDER BY collection, seq",
-    );
+    // One round trip: open the transaction, take the lock and read everything.
+    const results = (await client.query(
+      `BEGIN; SELECT pg_advisory_xact_lock(${LOCK_KEY}); SELECT collection, id, data FROM records ORDER BY collection, seq`,
+    )) as unknown as { rows: { collection: string; id: string; data: { id: string } }[] }[];
+    const rows = results[2].rows;
 
     const loaded: Collections = Object.fromEntries(names.map((name) => [name, []]));
     const before = new Map<string, string>();
@@ -100,22 +106,22 @@ export async function withPgCollections<T>(
       delIds.push(id);
     }
 
+    // One round trip for every write plus the commit.
+    const lit = (value: string) => client.escapeLiteral(value);
+    const statements: string[] = [];
     if (upIds.length) {
-      await client.query(
-        `INSERT INTO records (collection, id, data)
-         SELECT * FROM unnest($1::text[], $2::text[], $3::jsonb[])
+      const values = upIds.map((id, i) => `(${lit(upCollections[i])}, ${lit(id)}, ${lit(upData[i])}::jsonb)`);
+      statements.push(
+        `INSERT INTO records (collection, id, data) VALUES ${values.join(", ")}
          ON CONFLICT (collection, id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
-        [upCollections, upIds, upData],
       );
     }
     if (delIds.length) {
-      await client.query(
-        `DELETE FROM records r USING unnest($1::text[], $2::text[]) AS d(collection, id)
-         WHERE r.collection = d.collection AND r.id = d.id`,
-        [delCollections, delIds],
-      );
+      const pairs = delIds.map((id, i) => `(${lit(delCollections[i])}, ${lit(id)})`);
+      statements.push(`DELETE FROM records WHERE (collection, id) IN (${pairs.join(", ")})`);
     }
-    await client.query("COMMIT");
+    statements.push("COMMIT");
+    await client.query(statements.join(";\n"));
     return result;
   } catch (err) {
     await client.query("ROLLBACK").catch(() => undefined);
