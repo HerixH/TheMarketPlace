@@ -1,14 +1,13 @@
 import { randomBytes } from "crypto";
-import { promises as fs } from "fs";
-import path from "path";
 import { NextRequest } from "next/server";
-import { UPLOAD_DIR } from "@/lib/server/db";
+import { saveUpload } from "@/lib/server/db";
 import { handle, ok } from "@/lib/server/api";
 import { HttpError } from "@/lib/server/stellar";
 
 export const dynamic = "force-dynamic";
 
 const MAX_BYTES = 3 * 1024 * 1024;
+const CONTENT_TYPES = { png: "image/png", jpg: "image/jpeg", webp: "image/webp" } as const;
 
 /** Detects the real image type from magic bytes instead of trusting the client. */
 function sniff(buf: Buffer): "png" | "jpg" | "webp" | null {
@@ -33,9 +32,8 @@ export function POST(req: NextRequest) {
     const ext = sniff(buf);
     if (!ext) throw new HttpError(415, "Only PNG, JPEG or WebP images are allowed");
 
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
     const name = `${randomBytes(12).toString("hex")}.${ext}`;
-    await fs.writeFile(path.join(UPLOAD_DIR, name), buf);
+    await saveUpload(name, CONTENT_TYPES[ext], buf);
     return ok({ url: `/api/uploads/${name}` }, 201);
   });
 }

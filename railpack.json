@@ -5,6 +5,6 @@
     "node": "22"
   },
   "deploy": {
-    "startCommand": "sh -c '[ -f data/db.json ] || node scripts/seed.mjs; npm run start'"
+    "startCommand": "sh -c '[ -n \"$DATABASE_URL\" ] || [ -f data/db.json ] || node scripts/seed.mjs; npm run start'"
   }
 }

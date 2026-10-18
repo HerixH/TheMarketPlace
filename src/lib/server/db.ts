@@ -2,6 +2,7 @@ import "server-only";
 import { promises as fs } from "fs";
 import path from "path";
 import type { Order, Payout, Product, Report, Review, SupportRequest, TrackingUpdate } from "../types";
+import { pgGetUpload, pgPutUpload, usePostgres, withPgCollections, type Collections } from "./pg";
 
 export interface AccountRecord {
   id: string;
@@ -35,7 +36,7 @@ export interface DB {
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "db.json");
-export const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
+const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 
 /** Unpaid orders release their reserved stock after this long. */
 const PENDING_TTL_MS = 20 * 60 * 1000;
@@ -113,24 +114,55 @@ function expireStalePending(db: DB): boolean {
   return changed;
 }
 
+const COLLECTIONS = ["products", "orders", "reviews", "accounts", "sessions", "reports", "payouts", "support"] as const;
+
+function fromCollections(data: Collections): DB {
+  const db = Object.fromEntries(COLLECTIONS.map((name) => [name, data[name] ?? []])) as unknown as DB;
+  db.orders = db.orders.map(normalizeOrder);
+  return db;
+}
+
+function runPg<T>(fn: (db: DB) => T | Promise<T>): Promise<T> {
+  return withPgCollections(COLLECTIONS, async (data) => {
+    const db = fromCollections(data);
+    expireStalePending(db);
+    const result = await fn(db);
+    return { result, data: db as unknown as Collections };
+  });
+}
+
+async function runFile<T>(fn: (db: DB) => T | Promise<T>): Promise<T> {
+  const db = await read();
+  db.accounts ??= [];
+  db.sessions ??= [];
+  db.reports ??= [];
+  db.payouts ??= [];
+  db.support ??= [];
+  const expired = expireStalePending(db);
+  const before = expired ? "" : JSON.stringify(db);
+  const result = await fn(db);
+  if (expired || JSON.stringify(db) !== before) await write(db);
+  return result;
+}
+
 /**
  * Runs `fn` with exclusive access to the database. Changes made to the
- * object passed to `fn` are persisted when it returns.
+ * object passed to `fn` are persisted when it returns. Uses Postgres when
+ * DATABASE_URL is set, otherwise data/db.json.
  */
 export function withDb<T>(fn: (db: DB) => T | Promise<T>): Promise<T> {
-  const run = queue.then(async () => {
-    const db = await read();
-    db.accounts ??= [];
-    db.sessions ??= [];
-    db.reports ??= [];
-    db.payouts ??= [];
-    db.support ??= [];
-    const expired = expireStalePending(db);
-    const before = expired ? "" : JSON.stringify(db);
-    const result = await fn(db);
-    if (expired || JSON.stringify(db) !== before) await write(db);
-    return result;
-  });
+  const run = queue.then(() => (usePostgres ? runPg(fn) : runFile(fn)));
   queue = run.catch(() => undefined);
   return run;
+}
+
+export async function saveUpload(name: string, contentType: string, data: Buffer): Promise<void> {
+  if (usePostgres) return pgPutUpload(name, contentType, data);
+  await fs.mkdir(UPLOAD_DIR, { recursive: true });
+  await fs.writeFile(path.join(UPLOAD_DIR, name), data);
+}
+
+export async function readUpload(name: string): Promise<Buffer | null> {
+  if (usePostgres) return pgGetUpload(name);
+  return fs.readFile(path.join(UPLOAD_DIR, name)).catch(() => null);
 }
