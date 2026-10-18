@@ -1,0 +1,18 @@
+# Rust
+target
+
+# Stellar CLI
+.soroban
+.stellar
+
+# Node / Next
+node_modules
+.next
+out
+next-env.d.ts
+*.tsbuildinfo
+
+# Local data and secrets
+data
+.env
+.env.local
