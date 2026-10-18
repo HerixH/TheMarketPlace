@@ -14,6 +14,9 @@ export interface AccountRecord {
   banned?: boolean;
   banReason?: string | null;
   bannedAt?: string | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
   createdAt: string;
 }
 

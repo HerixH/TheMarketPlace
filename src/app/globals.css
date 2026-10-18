@@ -1106,6 +1106,57 @@ a.review-public {
   flex-wrap: wrap;
   margin-top: 18px;
 }
+.profile-location {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--pink);
+  border-radius: 12px;
+  background: #fff;
+  animation: menu-drop 0.16s ease-out;
+}
+.profile-form .field {
+  margin: 0;
+}
+.profile-form .row {
+  margin: 0;
+}
+.profile-form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.profile-form-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.profile-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.profile-check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.profile-check input {
+  accent-color: var(--pink);
+}
+.profile-hint {
+  margin: -4px 0 0;
+  font-size: 12px;
+}
 .wallet-balances {
   display: grid;
   grid-template-columns: 1fr 1fr;

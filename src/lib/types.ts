@@ -11,6 +11,9 @@ export interface Account {
   /** Set when an admin bans the account after a violation report. */
   banned?: boolean;
   banReason?: string | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
   createdAt: string;
 }
 

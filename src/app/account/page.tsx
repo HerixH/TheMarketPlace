@@ -9,6 +9,7 @@ import { api } from "@/lib/client/api";
 import { addUsdcTrustline, getWalletBalances, signAuth, type WalletBalances } from "@/lib/client/stellar";
 import { EXPLORER_URL, NETWORK_NAME } from "@/lib/config";
 import type { Account, SellerProfile } from "@/lib/types";
+import { ProfileSettings, type SettingsPanel } from "./ProfileSettings";
 
 export default function AccountPage() {
   const { account, loading, refresh, signOut } = useAccount();
@@ -19,6 +20,7 @@ export default function AccountPage() {
   const [balances, setBalances] = useState<WalletBalances | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(false);
   const [sales, setSales] = useState<SellerProfile | null>(null);
+  const [settings, setSettings] = useState<SettingsPanel | null>(null);
 
   const embedded = account?.walletAddress ?? null;
   const shown = embedded ?? address;
@@ -121,6 +123,7 @@ export default function AccountPage() {
   }
 
   const differentWallet = Boolean(embedded && address && address !== embedded);
+  const location = [account.address, account.city, account.country].filter(Boolean).join(", ");
 
   return (
     <>
@@ -144,12 +147,25 @@ export default function AccountPage() {
                 <span>{account.email}</span>
                 <span>· Member since {new Date(account.createdAt).toLocaleDateString()}</span>
               </div>
+              {location && <div className="profile-location">{location}</div>}
             </div>
           </div>
           <div className="profile-actions">
             <Link href="/orders" className="btn btn-outline btn-sm">
               My orders
             </Link>
+            <button
+              className={settings === "profile" ? "btn btn-sm" : "btn btn-outline btn-sm"}
+              onClick={() => setSettings((s) => (s === "profile" ? null : "profile"))}
+            >
+              Edit profile
+            </button>
+            <button
+              className={settings === "password" ? "btn btn-sm" : "btn btn-outline btn-sm"}
+              onClick={() => setSettings((s) => (s === "password" ? null : "password"))}
+            >
+              Change password
+            </button>
             {embedded && (
               <Link href={`/sellers/${embedded}`} className="btn btn-outline btn-sm">
                 Public page
@@ -164,6 +180,9 @@ export default function AccountPage() {
               Sign out
             </button>
           </div>
+          {settings && (
+            <ProfileSettings key={settings} account={account} panel={settings} onClose={() => setSettings(null)} />
+          )}
           {sales && (
             <div className="balance-tile" style={{ marginTop: 18 }}>
               <span>Sales volume</span>

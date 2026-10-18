@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { COUNTRIES } from "../countries";
 import type { Account } from "../types";
 import { withDb, type AccountRecord } from "./db";
 import { HttpError } from "./stellar";
@@ -18,6 +19,9 @@ export function publicAccount(account: AccountRecord): Account {
     admin: account.admin === true,
     banned: account.banned === true,
     banReason: account.banReason ?? null,
+    address: account.address ?? null,
+    city: account.city ?? null,
+    country: account.country ?? null,
     createdAt: account.createdAt,
   };
 }
@@ -159,6 +163,55 @@ export async function signOut(): Promise<void> {
   const id = hashToken(token);
   await withDb((db) => {
     db.sessions = db.sessions.filter((s) => s.id !== id);
+  });
+}
+
+function optionalText(value: unknown, label: string, max: number): string | null {
+  if (value == null) return null;
+  if (typeof value !== "string") throw new HttpError(400, `${label} must be text`);
+  const text = value.trim();
+  if (text.length > max) throw new HttpError(400, `${label} must be at most ${max} characters`);
+  return text || null;
+}
+
+export async function updateProfile(
+  accountId: string,
+  input: { name?: unknown; address?: unknown; city?: unknown; country?: unknown },
+): Promise<Account> {
+  const name = typeof input.name === "string" ? input.name.trim() : "";
+  if (name.length < 2 || name.length > 40) throw new HttpError(400, "Name must be 2 to 40 characters");
+  const address = optionalText(input.address, "Address", 200);
+  const city = optionalText(input.city, "City", 60);
+  const country = optionalText(input.country, "Country", 60);
+  if (country && !(COUNTRIES as readonly string[]).includes(country)) throw new HttpError(400, "Choose a country from the list");
+
+  const account = await withDb((db) => {
+    const mine = db.accounts.find((a) => a.id === accountId);
+    if (!mine) throw new HttpError(401, "Sign in again");
+    mine.name = name;
+    mine.address = address;
+    mine.city = city;
+    mine.country = country;
+    return mine;
+  });
+  return publicAccount(account);
+}
+
+/** Changes the password and signs out every other session on the account. */
+export async function changePassword(accountId: string, current: unknown, next: unknown): Promise<void> {
+  const password = checkPasswordPolicy(next);
+  const jar = await cookies();
+  const token = jar.get(COOKIE)?.value;
+  const keep = token ? hashToken(token) : null;
+  await withDb((db) => {
+    const mine = db.accounts.find((a) => a.id === accountId);
+    if (!mine) throw new HttpError(401, "Sign in again");
+    if (typeof current !== "string" || !checkPassword(current, mine.passwordHash)) {
+      throw new HttpError(400, "Current password is incorrect");
+    }
+    if (checkPassword(password, mine.passwordHash)) throw new HttpError(400, "Choose a password you have not used here");
+    mine.passwordHash = hashPassword(password);
+    db.sessions = db.sessions.filter((s) => s.accountId !== accountId || s.id === keep);
   });
 }
 
