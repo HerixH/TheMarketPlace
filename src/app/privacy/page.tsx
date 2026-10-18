@@ -40,7 +40,7 @@ export default function PrivacyPage() {
 
       <h2>What we do not collect</h2>
       <p>
-        We do not ask for a card number. Card checkout is not turned on. We do not receive your Stellar
+        We do not ask for a card number, because card payments are not accepted. We do not receive your Stellar
         secret key. Signing happens in your wallet.
       </p>
 

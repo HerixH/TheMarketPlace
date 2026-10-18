@@ -339,13 +339,6 @@ export function BuyPanel({ product }: { product: Product }) {
             <span>USDC goes straight to the seller wallet. Fastest, but there is no buyer protection.</span>
           </div>
         </label>
-        <label className="mode mode-later">
-          <input type="radio" name="mode" disabled />
-          <div>
-            <b>Card</b>
-            <span>Coming later. Card checkout is not available yet.</span>
-          </div>
-        </label>
       </div>
 
       <div className="total-row">

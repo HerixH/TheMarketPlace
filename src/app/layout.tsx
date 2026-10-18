@@ -10,9 +10,8 @@ import { WalletProvider } from "@/components/WalletProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "The Market Place: buy and sell with USDC on chain and off chain",
-  description:
-    "A marketplace where buyers and sellers trade directly, with USDC on chain on Stellar and off chain card checkout.",
+  title: "The Market Place: buy and sell with USDC on Stellar",
+  description: "A marketplace where buyers and sellers trade directly, with payments settled in USDC on Stellar.",
   applicationName: "The Market Place",
   appleWebApp: { capable: true, title: "The Market Place", statusBarStyle: "default" },
   icons: {

@@ -21,8 +21,7 @@ export default function TermsPage() {
       </p>
       <p>
         Payments that are available today are USDC on the Stellar network, either sent directly to the seller or held
-        in a Soroban escrow contract until delivery is confirmed. Card checkout is not available yet. When it is added,
-        these terms will be updated before you can use it.
+        in a Soroban escrow contract until delivery is confirmed. Card payments are not accepted.
       </p>
 
       <h2>Accounts</h2>

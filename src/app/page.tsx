@@ -14,7 +14,7 @@ const TILES = [
 
 const STEPS = [
   ["Sign in", "Create an account, then link a Stellar wallet for on chain payments."],
-  ["Pay", "Pay on chain in USDC, or off chain by card when that checkout is available."],
+  ["Pay", "Pay in USDC on Stellar, directly or through escrow."],
   ["Seller ships", "Your order is marked paid once the payment is confirmed."],
   ["Confirm delivery", "Confirm receipt to close the order, then review the seller."],
 ];
@@ -31,11 +31,11 @@ export default async function Home() {
         <div className="container">
           <div className="hero-copy">
             <h1>
-              Buy and sell with <em>USDC</em> on chain and off chain.
+              Buy and sell with <em>USDC</em> on Stellar.
             </h1>
             <p>
-              Trade directly with people around the world. On chain, USDC settles on Stellar and escrow can hold funds
-              until your order arrives. Off chain card checkout comes later.
+              Trade directly with people around the world. USDC settles on Stellar in seconds, and escrow can hold funds
+              until your order arrives.
             </p>
             <div className="hero-actions">
               <Link href="/shop" className="btn btn-lg">

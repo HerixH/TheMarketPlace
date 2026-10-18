@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "The Market Place",
     short_name: "Market Place",
-    description: "Buy and sell with USDC on chain and off chain.",
+    description: "Buy and sell with USDC on Stellar.",
     start_url: "/",
     scope: "/",
     display: "standalone",

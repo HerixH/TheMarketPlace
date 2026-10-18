@@ -1,4 +1,4 @@
-/** USDC on Stellar. Card payments are planned and are not accepted yet. */
+/** USDC on Stellar. */
 export type PayMode = "direct" | "escrow";
 
 export interface Account {
