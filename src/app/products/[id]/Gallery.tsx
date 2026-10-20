@@ -73,43 +73,61 @@ function SwipeTrack({
   onChange: (index: number) => void;
 }) {
   const frame = useRef<HTMLDivElement>(null);
-  const start = useRef<{ x: number; y: number; t: number; axis: "x" | "y" | null } | null>(null);
+  // The drag is tracked in a ref: a quick flick can end before React re-renders,
+  // so state read in the touchend handler would still hold the pre-drag offset.
+  const drag = useRef<{ x: number; y: number; t: number; dx: number; axis: "x" | "y" | null } | null>(null);
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
   const last = images.length - 1;
 
+  function reset() {
+    drag.current = null;
+    setOffset(0);
+    setDragging(false);
+  }
+
   function onTouchStart(e: React.TouchEvent) {
+    if (e.touches.length > 1) {
+      reset();
+      return;
+    }
     const touch = e.touches[0];
-    start.current = { x: touch.clientX, y: touch.clientY, t: performance.now(), axis: null };
+    drag.current = { x: touch.clientX, y: touch.clientY, t: performance.now(), dx: 0, axis: null };
   }
 
   function onTouchMove(e: React.TouchEvent) {
-    const s = start.current;
-    if (!s) return;
-    const touch = e.touches[0];
-    const dx = touch.clientX - s.x;
-    const dy = touch.clientY - s.y;
-    if (!s.axis) {
-      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-      s.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
-      if (s.axis === "x") setDragging(true);
+    const d = drag.current;
+    if (!d) return;
+    if (e.touches.length > 1) {
+      reset();
+      return;
     }
-    if (s.axis !== "x") return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - d.x;
+    const dy = touch.clientY - d.y;
+    if (!d.axis) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      d.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      if (d.axis === "x") setDragging(true);
+    }
+    if (d.axis !== "x") return;
+    d.dx = dx;
     const atEdge = (index === 0 && dx > 0) || (index === last && dx < 0);
     setOffset(atEdge ? dx / 3 : dx);
   }
 
-  function onTouchEnd() {
-    const s = start.current;
-    start.current = null;
-    if (!s || s.axis !== "x") return;
+  function onTouchEnd(e: React.TouchEvent) {
+    const d = drag.current;
+    if (!d) return;
+    const touch = e.changedTouches[0];
+    const dx = d.axis === "x" && touch ? touch.clientX - d.x : d.dx;
+    reset();
+    if (d.axis !== "x") return;
     const width = frame.current?.offsetWidth || 1;
-    const velocity = Math.abs(offset) / Math.max(1, performance.now() - s.t);
-    const far = Math.abs(offset) > width * SWIPE_DISTANCE || velocity > SWIPE_VELOCITY;
-    if (far && offset < 0 && index < last) onChange(index + 1);
-    else if (far && offset > 0 && index > 0) onChange(index - 1);
-    setOffset(0);
-    setDragging(false);
+    const velocity = Math.abs(dx) / Math.max(1, performance.now() - d.t);
+    const far = Math.abs(dx) > width * SWIPE_DISTANCE || velocity > SWIPE_VELOCITY;
+    if (far && dx < 0 && index < last) onChange(index + 1);
+    else if (far && dx > 0 && index > 0) onChange(index - 1);
   }
 
   return (
