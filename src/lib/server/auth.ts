@@ -82,11 +82,17 @@ export async function createSession(accountId: string): Promise<string> {
   return token;
 }
 
-export function setSessionCookie(res: NextResponse, token: string) {
+/** Browsers drop Secure cookies on plain http, so only set it when the request arrived over https. */
+function isHttps(req: Request): boolean {
+  const forwarded = req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  return (forwarded ?? new URL(req.url).protocol.replace(":", "")) === "https";
+}
+
+export function setSessionCookie(req: Request, res: NextResponse, token: string) {
   res.cookies.set(COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isHttps(req),
     path: "/",
     maxAge: SESSION_MS / 1000,
   });

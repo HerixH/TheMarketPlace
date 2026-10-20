@@ -9,7 +9,7 @@ export function POST(req: Request) {
     const account = await signIn({ email: String(body.email ?? ""), password: String(body.password ?? "") });
     const token = await createSession(account.id);
     const res = ok(account);
-    setSessionCookie(res, token);
+    setSessionCookie(req, res, token);
     return res;
   });
 }

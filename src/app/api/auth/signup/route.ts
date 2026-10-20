@@ -13,7 +13,7 @@ export function POST(req: Request) {
     });
     const token = await createSession(account.id);
     const res = ok(account, 201);
-    setSessionCookie(res, token);
+    setSessionCookie(req, res, token);
     return res;
   });
 }
