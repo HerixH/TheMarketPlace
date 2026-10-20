@@ -936,6 +936,25 @@ header {
   height: 100%;
   object-fit: contain;
 }
+.gallery-swipe {
+  position: relative;
+  display: block;
+  touch-action: pan-y;
+  user-select: none;
+}
+.gallery-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+}
+.gallery-track.is-dragging {
+  transition: none;
+}
+.gallery-track img {
+  flex: 0 0 100%;
+  pointer-events: none;
+}
 .thumbs {
   display: flex;
   gap: 10px;
