@@ -1,12 +1,35 @@
+import Image from "next/image";
 import Link from "next/link";
 import { formatUsdc } from "@/lib/amount";
 import type { Product } from "@/lib/types";
 import { ArrowRight, ImageIcon, StarIcon } from "./Icons";
 
-export function ProductImage({ product, alt }: { product: Pick<Product, "images" | "name">; alt?: string }) {
-  if (product.images[0]) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={product.images[0]} alt={alt ?? product.name} loading="lazy" />;
+/** Only our own uploads are allowed through the image optimizer (see `images.localPatterns`). */
+export function isOptimizable(src: string): boolean {
+  return /^\/api\/uploads\/[^/?#]+$/.test(src);
+}
+
+export function ProductImage({
+  product,
+  alt,
+  sizes = "(max-width: 760px) 50vw, (max-width: 1000px) 33vw, 280px",
+}: {
+  product: Pick<Product, "images" | "name">;
+  alt?: string;
+  sizes?: string;
+}) {
+  const src = product.images[0];
+  if (src) {
+    return (
+      <Image
+        src={src}
+        alt={alt ?? product.name}
+        width={800}
+        height={800}
+        sizes={sizes}
+        unoptimized={!isOptimizable(src)}
+      />
+    );
   }
   return (
     <div className="placeholder" aria-hidden>

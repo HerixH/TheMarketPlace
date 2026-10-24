@@ -6,17 +6,36 @@ import { api } from "@/lib/client/api";
 import { COUNTRIES, DEFAULT_COUNTRY } from "@/lib/countries";
 import type { Account } from "@/lib/types";
 
-export type SettingsPanel = "profile" | "password";
+export function ProfileSettings({ account, onClose }: { account: Account; onClose: () => void }) {
+  const [changingPassword, setChangingPassword] = useState(false);
 
-export function ProfileSettings({ account, panel, onClose }: { account: Account; panel: SettingsPanel; onClose: () => void }) {
-  return panel === "profile" ? (
-    <EditProfile account={account} onClose={onClose} />
-  ) : (
-    <ChangePassword onClose={onClose} />
+  return (
+    <div className="profile-form">
+      <div className="profile-form-head">
+        <h3>Edit profile</h3>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
+          Close
+        </button>
+      </div>
+      <EditProfile account={account} />
+      <div className="profile-divider" />
+      <div className="profile-form-head">
+        <div>
+          <h4>Password</h4>
+          {!changingPassword && <p className="muted profile-hint">Change the password you use to sign in.</p>}
+        </div>
+        {!changingPassword && (
+          <button type="button" className="btn btn-outline btn-sm" onClick={() => setChangingPassword(true)}>
+            Change password
+          </button>
+        )}
+      </div>
+      {changingPassword && <ChangePassword onCancel={() => setChangingPassword(false)} />}
+    </div>
   );
 }
 
-function EditProfile({ account, onClose }: { account: Account; onClose: () => void }) {
+function EditProfile({ account }: { account: Account }) {
   const { refresh } = useAccount();
   const [name, setName] = useState(account.name);
   const [address, setAddress] = useState(account.address ?? "");
@@ -43,13 +62,7 @@ function EditProfile({ account, onClose }: { account: Account; onClose: () => vo
   }
 
   return (
-    <form className="profile-form" onSubmit={save}>
-      <div className="profile-form-head">
-        <h3>Edit profile</h3>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
-          Close
-        </button>
-      </div>
+    <form className="profile-section" onSubmit={save}>
       <div className="field">
         <label htmlFor="pf-name">Full name</label>
         <input id="pf-name" className="input" required minLength={2} maxLength={40} value={name} onChange={(e) => setName(e.target.value)} />
@@ -57,6 +70,9 @@ function EditProfile({ account, onClose }: { account: Account; onClose: () => vo
       <div className="field">
         <label htmlFor="pf-email">Email</label>
         <input id="pf-email" className="input" value={account.email} disabled />
+        <p className="muted profile-hint">
+          Email changes need a confirmation email, which will be available once the site has its own domain.
+        </p>
       </div>
       <div className="field">
         <label htmlFor="pf-address">Address</label>
@@ -95,7 +111,7 @@ function EditProfile({ account, onClose }: { account: Account; onClose: () => vo
   );
 }
 
-function ChangePassword({ onClose }: { onClose: () => void }) {
+function ChangePassword({ onCancel }: { onCancel: () => void }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -126,13 +142,7 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
 
   const type = show ? "text" : "password";
   return (
-    <form className="profile-form" onSubmit={save}>
-      <div className="profile-form-head">
-        <h3>Change password</h3>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
-          Close
-        </button>
-      </div>
+    <form className="profile-section" onSubmit={save}>
       <div className="field">
         <label htmlFor="pw-current">Current password</label>
         <input id="pw-current" className="input" type={type} autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
@@ -150,10 +160,16 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
       <label className="profile-check">
         <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} /> Show passwords
       </label>
-      <p className="muted profile-hint">At least 8 characters. Other devices signed in to this account will be signed out.</p>
+      <p className="muted profile-hint">
+        At least 8 characters. Other devices signed in to this account will be signed out. Forgot your password? Password
+        reset by email will be available once the site has its own domain.
+      </p>
       {error && <div className="alert alert-error">{error}</div>}
       {done && <div className="alert alert-success">Password changed. Other devices have been signed out.</div>}
       <div className="profile-form-actions">
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>
+          Cancel
+        </button>
         <button className="btn btn-sm" disabled={busy}>
           {busy && <span className="spinner" />} Change password
         </button>

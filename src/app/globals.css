@@ -939,23 +939,85 @@ header {
 .gallery-swipe {
   position: relative;
   display: block;
+  place-items: normal;
   touch-action: pan-y;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
 }
+.gallery-swipe[data-zoomed="true"] {
+  touch-action: none;
+}
 .gallery-track {
   display: flex;
+  width: 100%;
   height: 100%;
-  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
   will-change: transform;
 }
-.gallery-track.is-dragging {
-  transition: none;
-}
-.gallery-track img {
+.gallery-cell {
   flex: 0 0 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.gallery-zoom {
+  width: 100%;
+  height: 100%;
+  transform-origin: center;
+  will-change: transform;
+}
+.gallery-cell img {
   pointer-events: none;
+}
+.gallery-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.gallery-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.gallery-slide.is-active {
+  opacity: 1;
+}
+.photo {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.photo:not(.is-loaded) {
+  background: linear-gradient(90deg, #f1f1f5, #fafafc, #f1f1f5);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+.photo img {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.photo.is-loaded img {
+  opacity: 1;
+}
+.photo {
+  overflow: hidden;
+}
+.gallery-main .photo-backdrop {
+  object-fit: cover;
+  filter: blur(24px) saturate(1.15);
+  transform: scale(1.2);
+}
+.photo.is-loaded .photo-backdrop {
+  opacity: 0.55;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gallery-slide,
+  .photo img {
+    transition: none;
+  }
+  .photo:not(.is-loaded) {
+    animation: none;
+  }
 }
 .thumbs {
   display: flex;
@@ -1159,9 +1221,23 @@ a.review-public {
   margin: 0;
   font-size: 16px;
 }
+.profile-form-head h4 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.profile-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.profile-divider {
+  height: 1px;
+  background: var(--line);
+}
 .profile-form-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
 }
 .profile-check {
   display: flex;

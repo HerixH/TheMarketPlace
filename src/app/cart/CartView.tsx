@@ -160,7 +160,7 @@ export function CartView() {
           <article key={row.line.productId} className="order">
             <div className="order-img">
               {product ? (
-                <ProductImage product={product} />
+                <ProductImage product={product} sizes="76px" />
               ) : (
                 <div className="placeholder" />
               )}
